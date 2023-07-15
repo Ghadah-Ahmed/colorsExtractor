@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body{
+            margin: 0;
+        }
+        video{
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            z-index: -1;
+        }
+        .swatch {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 20px;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        .swatch div{
+            height: 100px;
+            width: 100px;
+            background: linear-gradient(to right, rgba(255, 0, 0, 0.582),rgba(255, 166, 0, 0.568),rgba(255, 255, 0, 0.548),rgba(0, 128, 0, 0.424),rgba(0, 0, 255, 0.281),rgba(76, 0, 130, 0.376),rgba(238, 130, 238, 0.472));
+            border-radius: 3px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        canvas{
+            display: none;
+        }
+
+    </style>
+    <title>Document</title>
+</head>
+<body>
+    <div class="swatch">
+        <div id="a">?</div>
+        <div id="b">?</div>
+        <div id="c">?</div>
+        <div id="d">?</div>
+    </div>
+
+    <video></video>
+    <canvas></canvas>
+
+    <script>
+        const apiUrl = "https://vision.googleapis.com/v1/images:annotate?key=AIzaSyDgUQhuBCRbo9aRzsDXaDjxSNJeth9JEdI";
+        var a = document.getElementById('a')
+        var b = document.getElementById('b')
+        var cc = document.getElementById('c')
+        var d = document.getElementById('d')
+
+
+        // Get the video element from the HTML document
+        const video = document.querySelector("video");
+
+        // Get the canvas element from the HTML document
+        const canvas = document.querySelector("canvas");
+
+        // Get the base64 string element from the HTML document
+        const base64StringElement = document.querySelector("img");
+
+        // Get the context of the canvas
+        const ctx = canvas.getContext("2d");
+
+        // Get user's permission to access the camera
+        navigator.mediaDevices
+        .getUserMedia({ video: true })
+        .then((stream) => {
+            // Set the video source to the user's camera
+            video.srcObject = stream;
+            video.addEventListener("loadedmetadata", () => {
+            video.play();
+            });
+        })
+        .catch((err) => {
+            console.error("Error accessing camera:", err);
+        });
+
+        // When the "Take Photo" button is clicked, capture an image from the video and convert it to a base64 string
+        window.addEventListener("click", () => {
+                // Set the canvas dimensions to match the video dimensions
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+
+                // Draw the current video frame onto the canvas
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                // Get the base64-encoded string of the canvas image
+                const base64String = canvas.toDataURL();
+
+
+                const requestParams = {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        requests: [
+                        {
+                            image: {
+                            content: base64String.split(",")[1]
+                            },
+                            features: [
+                            {
+                                maxResults: 50,
+                                type: "IMAGE_PROPERTIES"
+                            }
+                            ]
+                        }
+                        ]
+                    })
+                };
+
+                fetch(apiUrl, requestParams)
+                    .then((response) => response.json())
+                    .then((data) => {
+                        // Handle API response
+                        console.log('first')
+                        data.responses[0].imagePropertiesAnnotation.dominantColors.colors.slice(0, 4).map((c, i) => {
+                            let color = rgbToHex(c.color.red, c.color.green, c.color.blue);
+                            switch (i) {
+                                case 0:
+                                a.style.background = color;
+                                a.innerHTML = color;
+                                break;
+                                case 1:
+                                b.style.background = color;
+                                b.innerHTML = color;
+                                break;
+                                case 2:
+                                cc.style.background = color;
+                                cc.innerHTML = color;
+                                break;
+                                case 3:
+                                d.style.background = color;
+                                d.innerHTML = color;
+                                break;
+
+                                default:
+                                    break;
+                            }
+                        })
+                    })
+                    .catch((error) => {
+                        // Handle request error
+                        console.log(error);
+                });
+
+
+        });
+
+        
+        function componentToHex(c) {
+            var hex = c.toString(16);
+            return hex.length == 1 ? "0" + hex : hex;
+        }
+
+        function rgbToHex(r, g, b) {
+            return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+        }
+
+
+    </script>
+
+</body>
+</html>
