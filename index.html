@@ -74,7 +74,7 @@
 
         // Get user's permission to access the camera
         navigator.mediaDevices
-        .getUserMedia({ video: true })
+        .getUserMedia({ video: {facingMode: {exact: 'environment'}} })
         .then((stream) => {
             // Set the video source to the user's camera
             video.srcObject = stream;
